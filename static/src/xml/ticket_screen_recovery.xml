@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!-- Agregar botón "Recuperar Pedido" en TicketScreen -->
+    <t t-name="cs_pos_paid_order_recovery_control.TicketScreenRecoveryButton"
+       t-inherit="point_of_sale.TicketScreen"
+       t-inherit-mode="extension">
+
+        <!-- Agregar botón después del botón de reimpresión -->
+        <xpath expr="//button[contains(@class, 'js_reprint')]" position="after">
+            <button t-if="ticket.finalized and ticket.session_id.id === pos.session.id and !ticket.is_recovery"
+                    class="btn btn-warning btn-lg recover-order-btn"
+                    t-on-click="() => this.recoverOrder(ticket)"
+                    title="Recuperar este pedido pagado: anular pago y crear nuevo editable">
+                <i class="fa fa-undo me-2" />
+                Recuperar Pedido
+            </button>
+        </xpath>
+
+    </t>
+
+</templates>
