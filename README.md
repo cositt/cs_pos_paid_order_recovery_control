@@ -1,44 +1,42 @@
 # Paid Order Recovery Control (Control Recuperación Tickets Pagados TPV)
 
-**Version:** 19.0.1.0.0  
+**Version:** 19.0.2.0.0  
 **Author:** Cositt Technology  
 **License:** LGPL-3  
 **Category:** Point of Sale
 
 ## Overview
 
-This module implements critical security controls for Odoo Point of Sale environments by preventing unauthorized modification of finalized (paid) orders from other cash register sessions. It ensures data integrity and prevents accidental or intentional tampering with completed transactions.
+This module enables waitstaff to recover and modify finalized (paid) orders within the same cash register session. When a payment error occurs or items need adjustment, staff can instantly recover the closed order, reverse the payment, and create a new editable draft order with identical items, allowing full modification including items, quantities, and payment methods.
 
-The module is essential for multi-terminal POS setups and environments where multiple staff members or cashiers operate different POS terminals simultaneously.
+Essential for restaurant environments where payment errors or order corrections must be handled quickly and efficiently.
 
 ## Features
 
-### Security Control
+### Order Recovery System
 
-- **Session-Based Validation:** Blocks modification of paid orders from other POS sessions
-- **Finalized Order Protection:** Prevents changes to completed transactions
-- **Smart Blocking:** Only affects order editing, not viewing or reprinting
-- **User-Friendly Alerts:** Clear messages when access is denied
+- **One-Click Recovery:** Simple "Recover Order" button on closed orders
+- **Payment Reversal:** Automatically reverses all payments from the original order
+- **Draft Recreation:** Creates new editable draft order with original items
+- **Same Session Requirement:** Orders can only be recovered within the same cash register session
+- **Closed Session Protection:** Prevents recovery once cash register session is closed
+- **Audit Trail:** Original order marked as cancelled with recovery reference
 
-### Operational Flexibility
+### Flexibility
 
-- **Allowed Operations:**
-  - View paid orders (query/read)
-  - Reprint receipts
-  - Process returns/refunds
-  - Historical order review
+- **Full Item Modification:** Add, remove, or change quantities in recovered order
+- **Payment Method Change:** Pay with different method (cash ↔ card)
+- **Payment Splits:** Create multi-method payments (e.g., 25€ cash + 25€ card)
+- **Customer Modification:** Change customer assignment if needed
+- **Complete Redo:** Essentially a new order with original data as starting point
 
-- **Blocked Operations:**
-  - Edit paid orders from other sessions
-  - Modify finalized transaction details
-  - Change customer information
-  - Alter payment records
+### Safety & Compliance
 
-### Multi-Terminal Support
-
-- **Session Isolation:** Each POS terminal maintains its own session
-- **Cross-Terminal Protection:** Prevents interference between cashiers
-- **Audit Trail:** Maintains clear separation of transactions
+- ✅ Session-based isolation (prevents cross-session tampering)
+- ✅ Automatic audit trail (original order preserved)
+- ✅ Validation checks (session status, order finalization, payment existence)
+- ✅ User-friendly dialogs with confirmation
+- ✅ Error handling and clear messages
 
 ## Installation
 
@@ -59,73 +57,136 @@ The module is essential for multi-terminal POS setups and environments where mul
 ### Prerequisites
 
 - Point of Sale module must be installed
-- Multi-terminal setup (single or multiple POS terminals)
-- Standard Odoo POS user permissions
+- Standard Odoo POS setup with payment methods
+- Cash register session in progress (not closed)
 
-### No Configuration Required
+### No Additional Configuration Required
 
-This module works out-of-the-box with no additional configuration needed. It automatically:
-- Detects current POS session
-- Checks order finalization status
-- Validates session ownership
-- Applies restrictions accordingly
+This module works out-of-the-box with no configuration needed. The "Recover Order" button appears automatically on eligible orders.
 
 ## Usage
 
-### Normal Operations
+### When to Use
 
-#### Same-Session Operations (Allowed)
+Use order recovery when:
+- Wrong payment method selected (charged card instead of cash)
+- Customer asks to modify order after payment
+- Items need to be added or removed post-payment
+- Need to process refund + new payment for changed order
+- Payment error occurred during transaction
 
-1. **Opening Paid Orders from Current Session:**
-   - Cashier can open and review their own paid orders
-   - Can reprint receipts
-   - Can process returns if permitted
+### Recovery Workflow
 
-2. **Creating New Orders:**
-   - New orders created normally
-   - No restrictions on current session transactions
+#### Step 1: Identify Closed Order
 
-3. **Historical Review:**
-   - View previous orders for information
-   - Access transaction history
-   - Check customer history
+1. In POS, go to **Tickets Screen** (closed orders view)
+2. Browse through closed/finalized orders
+3. Find the order that needs correction
 
-#### Cross-Session Operations (Blocked)
+#### Step 2: Open Recovery Dialog
 
-1. **Attempting to Edit Another Cashier's Paid Order:**
-   - System displays alert: "Acceso restringido"
-   - Message: "Este ticket no pertenece a la caja actual y no puede modificarse"
-   - Operation is canceled
-   - Cashier cannot proceed
+1. Click the **"Recuperar Pedido"** (Recover Order) button on the order
+2. System displays confirmation dialog:
+   ```
+   Title: "Confirmar recuperación"
+   Message: "¿Recuperar pedido [ORDER_NAME]?
+   
+            Se revertirá el pago y se creará un nuevo pedido 
+            editable con los mismos productos para que pueda 
+            modificarlo."
+   
+   Buttons: [Confirmar] [Cancelar]
+   ```
 
-### Error Messages
+#### Step 3: Confirm Recovery
 
-**Alert Dialog:**
+1. Click **"Confirmar"** to proceed
+2. System automatically:
+   - Reverses all payments from original order
+   - Marks original order as cancelled
+   - Creates new draft order with identical items
+3. New order opens in **Product Screen** (ready to edit)
+
+#### Step 4: Modify the Order
+
+Now you have a fully editable draft order where you can:
+
+**Modify Items:**
+- Change quantities (more or less)
+- Remove unwanted items
+- Add new items
+- Change item details (notes, attributes)
+
+**Modify Payment:**
+- Select different payment method (cash, card, etc.)
+- Create payment splits:
+  - Example: 25€ cash + 25€ card
+  - Add multiple payment lines with different methods
+  - Each line specifies method and amount
+
+**Modify Customer:**
+- Change or add customer details if needed
+
+#### Step 5: Complete Payment
+
+1. Proceed with payment as normal POS order
+2. Choose payment method(s):
+   - Single method: Simple payment screen
+   - Multiple methods: Add multiple payment lines
+3. Confirm payment
+4. Order closes with new payment
+
+**Result:**
+- Original order: Marked as "cancelled" (history/audit)
+- New order: Paid with corrections/modifications
+- Payments reversed and new payment recorded
+- Customer satisfied with corrected order
+
+### Practical Examples
+
+**Example 1: Wrong Payment Method**
+
 ```
-Title: "Acceso restringido" (Access Restricted)
-Message: "Este ticket no pertenece a la caja actual y no puede modificarse."
-         (This ticket does not belong to the current cash register and cannot be modified.)
+Original Order: 50€ (charged to CARD by mistake)
+Action:         Recover order
+Modification:   (no changes needed)
+New Payment:    50€ CASH
+Result:         Payment reversed from card, 50€ charged to cash ✓
 ```
 
-### Intended Use Cases
+**Example 2: Item Correction**
 
-#### Multi-Cashier Environment
+```
+Original Order:  Coffee (5€) + Juice (4€) = 9€
+Mistake:         Charged 15€ by mistake
+Action:          Recover order
+Modification:    Remove juice (only coffee needed)
+New Subtotal:    5€
+New Payment:     5€ CASH
+Result:          Refund 15€ card, charge 5€ cash ✓
+```
 
-- **Scenario:** Restaurant with 3 cashiers, each with separate POS terminal
-- **Benefit:** Cashier A cannot modify orders from Cashier B's session
-- **Result:** Data integrity maintained, audit trail clear
+**Example 3: Payment Split**
 
-#### Shift Handover
+```
+Original Order:  Meal 50€ (all CARD)
+Customer Says:   "I want to pay part with cash"
+Action:          Recover order
+New Payment:     25€ CASH + 25€ CARD (split)
+Result:          50€ distributed between two payment methods ✓
+```
 
-- **Scenario:** Morning shift closing, afternoon shift starting
-- **Benefit:** Previous shift's orders are protected from modification
-- **Result:** Each session remains independent and auditable
+**Example 4: Item Addition**
 
-#### Training/New Staff
-
-- **Scenario:** New cashier accidentally selects wrong order
-- **Benefit:** System prevents modification if order from another session
-- **Result:** Safe, error-tolerant operation
+```
+Original Order:  Appetizer 8€ (CARD)
+Customer Wants:  Add dessert 6€
+Action:          Recover order
+Modification:    Add dessert item
+New Subtotal:    14€
+New Payment:     14€ CARD
+Result:          14€ charged (8€ refunded, 14€ new charge) ✓
+```
 
 ## Technical Details
 
@@ -135,148 +196,181 @@ Message: "Este ticket no pertenece a la caja actual y no puede modificarse."
 
 ### Module Components
 
-#### JavaScript Patch (`paid_order_recovery_control.js`)
+#### Backend (Python)
 
-**Target:** `TicketScreen.prototype.setOrder()`
+**Model:** `pos.order` (extended)
 
-**Logic:**
-```javascript
-if (order?.finalized && order.session_id?.id !== this.pos.session.id) {
-  // Display alert and block operation
-  return;  // Don't proceed with setOrder
-}
-return super.setOrder(order);  // Allow operation
+**New Fields:**
+- `original_order_id` (Many2one): Links to the original recovered order
+- `is_recovery` (Boolean): Marks if this order is a recovery
+
+**New Method:** `action_recover_order()`
+
+```python
+def action_recover_order(self):
+    """
+    Main recovery workflow:
+    1. Validate same session and session is open
+    2. Reverse all payments
+    3. Create new draft order with copied items
+    4. Mark original as cancelled
+    5. Return new order ID
+    """
 ```
 
-**Conditions:**
-- `order.finalized` = Order is marked as paid/completed
-- `order.session_id.id` = Session of the order
-- `this.pos.session.id` = Current POS session ID
-- Comparison: Orders must belong to current session to be editable
+**Process:**
+1. **Validation Phase:**
+   - Check current session (must be same)
+   - Check session state (must be 'in_progress')
+   - Check order finalization
+   - Check payment existence
 
-### Key Implementation Details
+2. **Payment Reversal:**
+   - For each payment line in original order
+   - Create negative payment (reversal)
+   - Recorded in order history for audit
 
-- **Non-Intrusive:** Only adds one method patch
-- **Session-Aware:** Uses native Odoo session identification
-- **Finalized Check:** Uses `finalized` field (true = paid order)
-- **Dialog Alert:** Uses Odoo's standard AlertDialog component
-- **Translation Support:** Uses `_t()` for localization
+3. **New Order Creation:**
+   - Create new order in draft state
+   - Copy all order lines (items) to new order
+   - Link back to original via `original_order_id`
+   - Mark with `is_recovery = True`
 
-### What This Module Does NOT Block
+4. **Original Order Marking:**
+   - Set state to 'cancelled'
+   - Set is_recovery = True
+   - Audit trail preserved
 
-The following operations bypass this control:
+#### Frontend (JavaScript)
 
-1. **Order Query:**
-   - Reading/viewing paid orders is allowed
-   - Historical lookups work normally
+**Method:** `recoverOrder(order)`
 
-2. **Reprinting:**
-   - Uses separate reprint function
-   - Not affected by this module
+**Flow:**
+1. Show confirmation dialog to user
+2. If confirmed: Call RPC to backend `action_recover_order()`
+3. On success:
+   - Load updated orders from POS database
+   - Set new order as current order
+   - Navigate to ProductScreen for editing
+   - Show success message
+4. On error:
+   - Show error dialog with error message
+   - Remain on ticket screen
 
-3. **Returns/Refunds:**
-   - Separate return management screens
-   - Not subject to this restriction
+**User Dialogs:**
+- **Confirmation:** "¿Recuperar pedido [NAME]? Se revertirá el pago..."
+- **Success:** "El pedido [NAME] ha sido recuperado..."
+- **Error:** "Error al recuperar pedido: [MESSAGE]"
 
-4. **Payment Operations:**
-   - Finalization logic separate
-   - Module only blocks editing, not payment
+#### UI Elements (XML)
+
+**Button Placement:** TicketScreen (after reprint button)
+
+**Button Properties:**
+- Text: "Recuperar Pedido"
+- Icon: Undo symbol (↶)
+- Color: Warning (orange/yellow)
+- Visibility: Only when:
+  - Order is finalized (`ticket.finalized`)
+  - Same session (`ticket.session_id.id === pos.session.id`)
+  - Not already a recovery (`!ticket.is_recovery`)
+
+### Validation Rules
+
+```
+✅ Order must be finalized (state = 'paid')
+✅ Must be in current session
+✅ Session must be in_progress (not closed)
+✅ Order must have at least one payment
+❌ Prevent double-recovery (is_recovery = False)
+```
+
+### Audit Trail
+
+Original order is preserved:
+- State: `cancelled`
+- is_recovery: `True`
+- All original data intact
+- Visible in order history
+- No data lost, fully traceable
 
 ## Troubleshooting
 
-### Block Alert Appears Unexpectedly
+### "Recover Order" Button Not Visible
 
-**Problem:** Getting "Acceso restringido" alert when trying to modify own orders.
-
-**Solution:**
-1. Verify you're in the correct POS session:
-   - Check session ID displayed in POS interface
-   - Ensure you haven't switched terminals
-2. Check order finalization status:
-   - Paid orders cannot be edited (by design)
-   - Unpaid orders should be editable
-3. Check order session assignment:
-   - Order should show current session in details
-   - Contact administrator if incorrect
-
-### Cannot Modify Current Session Orders
-
-**Problem:** Even current session paid orders cannot be modified.
-
-**Solution:**
-1. This is expected behavior for finalized orders
-2. Paid orders are locked by design (Odoo standard)
-3. To modify paid orders, you may need:
-   - Administrator privileges
-   - Process return/exchange instead
-   - Contact your system administrator
-
-### Module Not Blocking Cross-Session Access
-
-**Problem:** Users can modify paid orders from other sessions.
+**Problem:** Button doesn't appear on closed orders.
 
 **Solution:**
 1. Verify module is installed:
-   - Check **Apps** > **Installed Modules**
+   - Go to **Apps > Installed Modules**
    - Search for module name
-2. Check POS configuration:
-   - Ensure POS is using correct session
-3. Verify order finalization:
-   - Check if orders are actually marked as finalized
-4. Clear cache and restart POS
-5. Contact administrator if issue persists
+2. Verify order is finalized:
+   - Order must have state = 'paid'
+   - Must show as "closed" in tickets list
+3. Verify correct session:
+   - Order must belong to current session
+   - Button only appears for current session orders
+4. Clear POS cache:
+   - Refresh browser (F5 or Ctrl+R)
+   - Clear browser cache (Ctrl+Shift+Delete)
 
-### Missing Alert Dialog
+### "This order does not belong to current cash register session"
 
-**Problem:** No alert appears when attempting cross-session edit.
+**Problem:** Error when trying to recover old order.
 
 **Solution:**
-1. Check browser console for errors:
-   - Press F12 to open developer tools
-   - Look for JavaScript errors
-2. Verify alert dialog component is available
-3. Check POS assets are loaded:
-   - Refresh POS page (Ctrl+R)
-   - Clear browser cache (Ctrl+Shift+Delete)
-4. Verify module installation is correct
+1. This is expected behavior - prevents cross-session tampering
+2. Orders can only be recovered within the same cash register session
+3. Once session closes, no recovery is possible
+4. To modify closed session orders, contact administrator
+5. This is a security feature to maintain data integrity
 
-## Security Considerations
+### "The cash register session is closed"
 
-### What This Module Protects Against
+**Problem:** Cannot recover order because session is closed.
 
-- ✅ Accidental modification of other cashier's orders
-- ✅ Unauthorized editing of finalized transactions
-- ✅ Data integrity across multiple terminals
-- ✅ Clear audit trail by session
+**Solution:**
+1. This is by design - prevents tampering with completed sessions
+2. Recovery only works during active session (in_progress state)
+3. To recover orders from closed session:
+   - Request administrator to reopen session (if needed)
+   - Or manual reversal process (consult IT)
+4. Prevention: Always recover orders BEFORE closing session
 
-### What This Module Does NOT Protect Against
+### "The order is not closed/finalized"
 
-- ❌ Direct database manipulation (requires OS-level access)
-- ❌ Orders modified before finalization
-- ❌ Administrative overrides (super-users may bypass)
-- ❌ Refund/return processing (separate authorization)
+**Problem:** Trying to recover draft or in-progress order.
 
-### Recommendations
+**Solution:**
+1. This is normal - recovery only for finalized orders
+2. If order is still editable (draft):
+   - Make changes directly (no recovery needed)
+   - Pay normally when ready
+3. If unsure of order state:
+   - Check if order is in "Paid" section of tickets
 
-1. **User Permissions:**
-   - Configure POS user groups appropriately
-   - Limit admin access to authorized personnel
-   - Use role-based access control
+### Recovery Failed - Payment Reversal Error
 
-2. **Session Management:**
-   - Always close sessions properly
-   - Don't share login credentials
-   - Enforce password policies
+**Problem:** Technical error during payment reversal.
 
-3. **Audit Logging:**
-   - Enable Odoo audit trail for POS transactions
-   - Monitor order modifications
-   - Review session logs regularly
+**Solution:**
+1. This is rare - indicates payment system issue
+2. Check payment method configuration:
+   - Go to **Point of Sale > Payment Methods**
+   - Verify all methods are active and configured
+3. Check order payments:
+   - Multiple payment methods may cause issues
+   - Single payment method usually works fine
+4. Contact administrator if problem persists
+5. Manual intervention may be needed
 
-4. **Hardware Security:**
-   - Secure physical POS terminals
-   - Implement screen lock timeouts
-   - Use dedicated terminals when possible
+## Limitations
+
+- ⚠️ Can only recover within same session
+- ⚠️ Cannot recover if session is closed
+- ⚠️ Cannot recover draft/unpaid orders (use direct edit)
+- ⚠️ Payment reversal depends on payment method support
+- ⚠️ Some payment methods may not support reversal
 
 ## Support
 
@@ -287,8 +381,8 @@ For issues, feature requests, or technical assistance:
 ## Compatibility
 
 - **Odoo Version:** 19.0 Enterprise
-- **POS Terminals:** Multiple terminals required for full benefit
-- **User Roles:** Compatible with standard POS user groups
+- **POS Requirements:** Standard Point of Sale setup
+- **Payment Methods:** Compatible with all standard Odoo payment methods
 
 ## License
 
@@ -296,10 +390,15 @@ This module is licensed under LGPL-3. See LICENSE file for details.
 
 ## Changelog
 
+### Version 19.0.2.0.0
+- Complete rewrite: Order recovery system
+- Automatic payment reversal
+- New editable draft order creation
+- Copied items from original
+- Session-based security controls
+- User-friendly dialogs
+- Full audit trail
+
 ### Version 19.0.1.0.0
 - Initial release
-- Cross-session order protection
-- Finalized order edit blocking
-- Session-based access control
-- Spanish localization included
-- Compatible with Odoo 19 Enterprise
+- Basic order access blocking by session
