@@ -8,18 +8,19 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 patch(TicketScreen.prototype, {
     /**
-     * Método patched: recoverOrder()
-     * Permite recuperar un pedido pagado dentro de la misma sesión
+     * Método: editPayment()
+     * Permite editar el pago de un pedido cerrado
+     * Elimina los pagos y abre PaymentScreen
      */
-    async recoverOrder(order) {
+    async editPayment(order) {
         // Mostrar diálogo de confirmación
         const confirmed = await new Promise((resolve) => {
             this.dialog.add(ConfirmationDialog, {
-                title: _t("Confirmar recuperación"),
+                title: _t("Editar pago"),
                 body: _t(
-                    `¿Recuperar pedido ${order.name}?\n\n` +
-                    `Se revertirá el pago y se creará un nuevo pedido editable ` +
-                    `con los mismos productos para que pueda modificarlo.`
+                    `¿Editar pago del pedido ${order.name}?\n\n` +
+                    `Se eliminarán todos los pagos actuales y podrá ` +
+                    `configurar el pago nuevamente en la pantalla de pago.`
                 ),
                 confirm: () => resolve(true),
                 cancel: () => resolve(false),
@@ -31,42 +32,42 @@ patch(TicketScreen.prototype, {
         }
 
         try {
-            // Llamar al backend para recuperar el pedido
-            const newOrderId = await this.env.services.rpc({
+            // Llamar al backend para editar pago
+            const orderId = await this.env.services.rpc({
                 model: "pos.order",
-                method: "action_recover_order",
+                method: "action_edit_payment",
                 args: [[order.id]],
             });
 
-            // Si éxito, esperar a que se sincronice la BD
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Si éxito, esperar a que se sincronice
+            await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Recargar órdenes del servidor
+            // Recargar órdenes
             await this.pos.db.load_orders();
             
-            // Obtener el nuevo pedido
-            const newOrder = this.pos.db.get_order(newOrderId);
+            // Obtener el pedido actualizado
+            const updatedOrder = this.pos.db.get_order(orderId);
 
-            if (newOrder) {
+            if (updatedOrder) {
                 // Establecer como orden actual
-                this.env.posStore.setCurrentOrder(newOrder);
+                this.env.posStore.setCurrentOrder(updatedOrder);
 
-                // Navegar a ProductScreen para editar
-                this.pos.showScreen("ProductScreen");
+                // Navegar a PaymentScreen para editar pago
+                this.pos.showScreen("PaymentScreen");
 
-                // Mostrar mensaje de éxito
+                // Mostrar mensaje
                 this.dialog.add(AlertDialog, {
-                    title: _t("Pedido recuperado"),
+                    title: _t("Editar pago"),
                     body: _t(
-                        `El pedido ${newOrder.name} ha sido recuperado.\n\n` +
-                        `Puede modificar los productos y el método de pago.`
+                        `El pago del pedido ${updatedOrder.name} ha sido eliminado.\n\n` +
+                        `Configure el nuevo pago en la pantalla de pago.`
                     ),
                 });
             }
         } catch (error) {
             // Mostrar error
             this.dialog.add(AlertDialog, {
-                title: _t("Error al recuperar pedido"),
+                title: _t("Error al editar pago"),
                 body: _t(error.data?.message || error.message || "Error desconocido"),
             });
         }
