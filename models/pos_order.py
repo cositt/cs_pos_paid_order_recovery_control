@@ -16,7 +16,6 @@ class PosOrder(models.Model):
     is_recovery = fields.Boolean(
         string="Es recuperación",
         default=False,
-        readonly=True,
         help="Indica si este pedido fue creado como recuperación",
     )
 
@@ -63,7 +62,7 @@ class PosOrder(models.Model):
         # PASO 3: Marcar original como cancelado/recuperado
         self.write(
             {
-                "state": "cancelled",
+                "state": "done",
                 "is_recovery": True,
             }
         )
@@ -112,7 +111,6 @@ class PosOrder(models.Model):
             "user_id": self.user_id.id,
             "original_order_id": self.id,
             "is_recovery": True,
-            "state": "draft",
         }
 
         # Crear nuevo pedido

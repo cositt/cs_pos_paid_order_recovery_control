@@ -38,13 +38,18 @@ patch(TicketScreen.prototype, {
                 args: [[order.id]],
             });
 
-            // Si éxito, cargar el nuevo pedido
+            // Si éxito, esperar a que se sincronice la BD
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Recargar órdenes del servidor
             await this.pos.db.load_orders();
+            
+            // Obtener el nuevo pedido
             const newOrder = this.pos.db.get_order(newOrderId);
 
             if (newOrder) {
                 // Establecer como orden actual
-                this.pos.selectedOrder = newOrder;
+                this.env.posStore.setCurrentOrder(newOrder);
 
                 // Navegar a ProductScreen para editar
                 this.pos.showScreen("ProductScreen");
