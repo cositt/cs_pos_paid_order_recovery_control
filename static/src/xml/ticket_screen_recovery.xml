@@ -6,11 +6,11 @@
        t-inherit="point_of_sale.TicketScreen"
        t-inherit-mode="extension">
 
-        <!-- Agregar botón después de otros botones en la barra de acciones -->
-        <xpath expr="//div[hasclass('button-section')]" position="inside">
-            <button t-if="ticketScreen.currentOrder?.finalized and ticketScreen.currentOrder?.session_id?.id === pos.session?.id and !ticketScreen.currentOrder?.is_recovery"
+        <!-- Agregar botón en la sección de acciones/botones -->
+        <xpath expr="//button" position="after">
+            <button t-if="ticket?.finalized and ticket?.session_id?.id === pos?.session?.id and !ticket?.is_recovery"
                     class="btn btn-warning btn-lg recover-order-btn"
-                    t-on-click="() => ticketScreen.recoverOrder(ticketScreen.currentOrder)"
+                    t-on-click="() => this.recoverOrder(ticket)"
                     title="Recuperar este pedido pagado: anular pago y crear nuevo editable">
                 <i class="fa fa-undo me-2" />
                 Recuperar Pedido
