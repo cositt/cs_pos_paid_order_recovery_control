@@ -5,108 +5,46 @@ import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { onMounted } from "@odoo/owl";
 
 patch(TicketScreen.prototype, {
-    setup() {
-        super.setup();
-        this.floatingButtonContainer = null;
-        
-        onMounted(() => {
-            this.initFloatingButton();
-        });
-    },
-
     /**
-     * Inicializa el observador de cambios en el ticket seleccionado
+     * Sobrescribe selectOrder para interceptar click en ticket y mostrar modal si está pagado
      */
-    initFloatingButton() {
-        // Crear contenedor del botón flotante
-        this.floatingButtonContainer = document.createElement('div');
-        this.floatingButtonContainer.className = 'cs-floating-edit-payment-btn';
-        this.floatingButtonContainer.innerHTML = `
-            <button class="btn btn-primary" title="Editar pago del ticket">
-                <i class="fa fa-edit"></i> Editar Pago
-            </button>
-        `;
-
-        // Agregar estilos CSS
-        this.floatingButtonContainer.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            border-radius: 5px;
-            display: none;
-        `;
-
-        // Agregar al DOM
-        document.body.appendChild(this.floatingButtonContainer);
-
-        // Agregar evento click al botón
-        const button = this.floatingButtonContainer.querySelector('button');
-        button.addEventListener('click', () => {
-            const currentOrder = this.pos.selectedOrder;
-            if (currentOrder) {
-                this.editPayment(currentOrder);
-            }
-        });
-
-        // Observar cambios en props para actualizar visibilidad
-        this.checkFloatingButtonVisibility();
-    },
-
-    /**
-     * Verifica y actualiza la visibilidad del botón flotante
-     */
-    checkFloatingButtonVisibility() {
-        if (!this.floatingButtonContainer) return;
-
-        const currentOrder = this.pos.selectedOrder;
-        
-        // Mostrar botón si hay un ticket seleccionado, finalizado y de la sesión actual
-        if (
-            currentOrder &&
-            currentOrder.finalized &&
-            currentOrder.session_id?.id === this.pos.session.id
-        ) {
-            this.floatingButtonContainer.style.display = 'block';
-        } else {
-            this.floatingButtonContainer.style.display = 'none';
+    selectOrder(order) {
+        if (order && order.finalized && order.session_id?.id === this.pos.session.id) {
+            // El ticket está pagado y es de la sesión actual
+            // Mostrar modal preguntando si quiere editarlo
+            this.showEditTicketModal(order);
+            return;  // No ejecutar el selectOrder original
         }
-    },
-
-    render() {
-        super.render();
-        // Verificar visibilidad después de cada render
-        this.checkFloatingButtonVisibility();
+        
+        // Si no está pagado, comportamiento normal
+        return super.selectOrder(order);
     },
 
     /**
-     * Método: editPayment()
-     * Permite editar el pago de un pedido cerrado
-     * Elimina los pagos y abre PaymentScreen
+     * Muestra modal preguntando si quiere editar el ticket pagado
      */
-    async editPayment(order) {
-        // Mostrar diálogo de confirmación
-        const confirmed = await new Promise((resolve) => {
-            this.dialog.add(ConfirmationDialog, {
-                title: _t("Editar pago"),
-                body: _t(
-                    `¿Editar pago del pedido ${order.name}?\n\n` +
-                    `Se eliminarán todos los pagos actuales y podrá ` +
-                    `configurar el pago nuevamente en la pantalla de pago.`
-                ),
-                confirm: () => resolve(true),
-                cancel: () => resolve(false),
-            });
+    showEditTicketModal(order) {
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Editar ticket"),
+            body: _t(
+                `El ticket ${order.name} está pagado.\n\n` +
+                `¿Deseas editarlo? Se realizará una devolución automática ` +
+                `y podrás modificar el pedido y el pago.`
+            ),
+            confirm: () => this.editTicketPayment(order),
+            cancel: () => {
+                // Deseleccionar el ticket
+                this.pos.selectedOrder = null;
+            },
         });
+    },
 
-        if (!confirmed) {
-            return;
-        }
-
+    /**
+     * Edita el pago del ticket (devolución + cambio a draft)
+     */
+    async editTicketPayment(order) {
         try {
             // Llamar al backend para editar pago
             const orderId = await this.env.services.rpc({
@@ -115,7 +53,7 @@ patch(TicketScreen.prototype, {
                 args: [[order.id]],
             });
 
-            // Si éxito, esperar a que se sincronice
+            // Esperar sincronización
             await new Promise(resolve => setTimeout(resolve, 500));
             
             // Recargar órdenes
@@ -128,26 +66,24 @@ patch(TicketScreen.prototype, {
                 // Establecer como orden actual
                 this.env.posStore.setCurrentOrder(updatedOrder);
 
-                // Navegar a PaymentScreen para editar pago
-                this.pos.showScreen("PaymentScreen");
-
-                // Mostrar mensaje
+                // Mostrar mensaje de éxito
                 this.dialog.add(AlertDialog, {
-                    title: _t("Editar pago"),
+                    title: _t("Ticket editando"),
                     body: _t(
-                        `El pago del pedido ${updatedOrder.name} ha sido eliminado.\n\n` +
-                        `Configure el nuevo pago en la pantalla de pago.`
+                        `El pago del ticket ${updatedOrder.name} ha sido devuelto.\n\n` +
+                        `Ahora puedes modificar el pedido (items, cantidad, etc).`
                     ),
                 });
             }
         } catch (error) {
             // Mostrar error
             this.dialog.add(AlertDialog, {
-                title: _t("Error al editar pago"),
+                title: _t("Error al editar ticket"),
                 body: _t(error.data?.message || error.message || "Error desconocido"),
             });
         }
     },
 });
+
 
 
