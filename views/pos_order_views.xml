@@ -14,7 +14,7 @@
                         type="object"
                         string="🔙 Recuperar Pago"
                         class="oe_highlight"
-                        attrs="{'invisible': [('can_recover_payment', '=', False)]}"/>
+                        invisible="not can_recover_payment"/>
                 </xpath>
             </field>
         </record>
