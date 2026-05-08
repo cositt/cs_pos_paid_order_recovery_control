@@ -23,11 +23,12 @@ class PosOrder(models.Model):
             can_recover = False
             try:
                 if order.state == 'done':
+                    # En Odoo 19, el estado es 'opened' o 'in_progress'
                     current_session = self.env['pos.session'].search(
-                        [('state', '=', 'in_progress')], limit=1
+                        [('state', 'in', ['in_progress', 'opened'])], limit=1
                     )
                     if current_session and order.session_id.id == current_session.id:
-                        if order.session_id.state == 'in_progress':
+                        if order.session_id.state in ['in_progress', 'opened']:
                             can_recover = True
             except:
                 pass
@@ -44,7 +45,7 @@ class PosOrder(models.Model):
 
         # Validación 1: ¿Es la sesión actual?
         current_session = self.env["pos.session"].search(
-            [("state", "=", "in_progress")], limit=1
+            [("state", "in", ["in_progress", "opened"])], limit=1
         )
         if not current_session or self.session_id.id != current_session.id:
             raise ValidationError(
@@ -52,7 +53,7 @@ class PosOrder(models.Model):
             )
 
         # Validación 2: ¿Sesión abierta?
-        if self.session_id.state != "in_progress":
+        if self.session_id.state not in ["in_progress", "opened"]:
             raise ValidationError(
                 _("La sesión de caja está cerrada. No se puede editar pagos.")
             )
