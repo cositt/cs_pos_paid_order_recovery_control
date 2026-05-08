@@ -1,40 +1,48 @@
 # Paid Order Recovery Control - Edit Payment (Control Recuperación Tickets Pagados TPV)
 
-**Version:** 19.0.2.0.0  
+**Version:** 19.0.3.0.0  
 **Author:** Cositt Technology  
 **License:** LGPL-3  
 **Category:** Point of Sale
 
 ## Overview
 
-This module enables waitstaff to quickly edit payment information for finalized (paid) orders within the same cash register session. With a single click, users can remove incorrect payments and reconfigure them with different payment methods, splits, or amounts - all without modifying the order items.
+This module enables administrators and staff to quickly recover and edit payment information for finalized (paid) orders within the same cash register session. With a single click on a "🔙 Recuperar Pago" button in the Order form, users can remove incorrect payments and reconfigure them with different payment methods, splits, or amounts.
 
 Perfect for restaurants where payment errors or adjustments are common and need fast resolution.
 
 ## Features
 
-### Payment Editing
+### Payment Recovery & Editing
 
-- **One-Click Payment Edit:** Simple "Editar Pago" button on closed orders
-- **Clean Payment Removal:** Automatically removes all payment lines
-- **Direct to Payment Screen:** Opens PaymentScreen for immediate reconfiguration
+- **One-Click Payment Recovery:** "🔙 Recuperar Pago" button visible on closed orders
+- **Automatic Payment Removal:** Deletes all payment lines from the order
+- **Draft Status:** Converts order back to draft status for re-payment
 - **Same Session Requirement:** Orders can only be edited within the same cash register session
 - **Closed Session Protection:** Prevents editing once cash register session is closed
 
-### Flexibility
+### Access & Usage
 
-- **Payment Method Change:** Switch between cash, card, bank transfer, etc.
-- **Payment Splits:** Create multi-method payments (e.g., 25€ cash + 25€ card)
-- **Amount Adjustment:** Pay different amounts if needed
-- **Quick Process:** Items remain untouched, only payment is reconfigured
+- **Access Point:** Odoo web interface > Point of Sale > Orders (pos.order form view)
+- **Button Visibility:** Only appears on finalized orders (state = 'done', finalized = True)
+- **User-Friendly:** Clear messaging with error validation
+
+### Flexibility After Recovery
+
+Once an order is recovered (payment removed, back to draft):
+- ✅ Edit order items if needed
+- ✅ Add/remove products
+- ✅ Create payment splits (e.g., 25€ cash + 25€ card)
+- ✅ Change payment method (cash, card, bank transfer, etc.)
+- ✅ Adjust amounts
 
 ### Safety & Compliance
 
-- ✅ Session-based isolation
-- ✅ Automatic validation
-- ✅ User confirmation dialog
-- ✅ Error handling with clear messages
-- ✅ Order state management
+- ✅ Session-based isolation (only current session)
+- ✅ Automatic validation of order status
+- ✅ Prevention of editing closed sessions
+- ✅ Clear error messages for users
+- ✅ Order state properly managed
 
 ## Installation
 
@@ -49,267 +57,223 @@ Perfect for restaurants where payment errors or adjustments are common and need 
 3. Install the module:
    - Search and click **Install** on "Control Recuperación Tickets Pagados TPV"
 
-## Configuration
+## Usage Guide
 
-### Prerequisites
+### Step 1: Access Orders
+1. Go to **Point of Sale** > **Orders** (in Odoo web interface)
+2. Find a finalized order (status = "Pagado" / "Paid")
 
-- Point of Sale module installed
-- Standard Odoo POS setup
-- Cash register session in progress
+### Step 2: Click "Recuperar Pago" Button
+1. Open the order form
+2. Click the **"🔙 Recuperar Pago"** button (appears in the header, only for paid orders)
+3. The system will:
+   - Validate the session is current and open
+   - Remove all payment records
+   - Change order state to draft
+   - Display a success message
 
-### No Additional Configuration Required
+### Step 3: Re-Configure Payment
+1. Order is now editable and in draft status
+2. Edit items if needed (add/remove products)
+3. Click **"Guardar"** to save changes
+4. The order is ready for re-payment in POS
 
-The "Editar Pago" button appears automatically on all finalized orders in the current session.
-
-## Usage
-
-### When to Use
-
-Use payment editing when:
-- Wrong payment method was charged (charged card instead of cash)
-- Need to split payment between methods
-- Customer wants to pay with different method
-- Payment amount needs adjustment
-
-### Workflow
-
-#### Step 1: Find Closed Order
-
-1. In POS, go to **Tickets Screen**
-2. Find the order that needs payment adjustment
-
-#### Step 2: Click Edit Payment Button
-
-1. Click **"Editar Pago"** button on the order
-2. Confirmation dialog appears:
-   ```
-   Title: "Editar pago"
-   Message: "¿Editar pago del pedido [ORDER_NAME]?
-   
-             Se eliminarán todos los pagos actuales y podrá 
-             configurar el pago nuevamente en la pantalla de pago."
-   
-   Buttons: [Confirmar] [Cancelar]
-   ```
-
-#### Step 3: Confirm
-
-1. Click **"Confirmar"**
-2. System removes all payments from order
-3. Order state changes to draft (payable)
-4. PaymentScreen opens automatically
-
-#### Step 4: Configure New Payment
-
-Now in PaymentScreen with empty payment:
-- Select payment method (cash, card, etc.)
-- Enter amount
-- If payment split needed:
-  - Add first payment line (e.g., 25€ cash)
-  - Add second payment line (e.g., 25€ card)
-  - Each line: method + amount
-- Confirm payment
-
-#### Step 5: Payment Complete
-
-- Order closes with new payment configured
-- Original payment completely replaced
-- Customer satisfied
-
-### Practical Examples
-
-**Example 1: Wrong Payment Method**
-
-```
-Current State:  50€ CARD (incorrect)
-Action:         Click "Editar Pago"
-PaymentScreen:  Configure 50€ CASH
-Result:         Payment changed to cash ✓
-```
-
-**Example 2: Payment Split**
-
-```
-Current State:  50€ CARD (full amount)
-Customer Says:  "50€ cash, 25€ card please"
-Action:         Click "Editar Pago"
-PaymentScreen:  
-  Line 1: 25€ CASH
-  Line 2: 25€ CARD
-Result:         Payment split correctly ✓
-```
-
-**Example 3: Amount Correction**
-
-```
-Current State:  15€ CARD (wrong amount, should be 20€)
-Action:         Click "Editar Pago"
-PaymentScreen:  Configure 20€ CARD
-Result:         Amount corrected ✓
-```
+### Step 4: Re-Payment in POS
+1. Open POS application
+2. The recovered order appears as a draft order
+3. Complete the payment with correct method/amount/split
+4. Order is finalized again
 
 ## Technical Details
 
-### Dependencies
+### Backend Model (`models/pos_order.py`)
 
-- `point_of_sale` (Odoo core module)
+**Method:** `action_edit_payment()`
 
-### Module Components
+**Validations:**
+- Order belongs to current cash register session
+- Session is open (state = 'in_progress')
+- Order is finalized (finalized = True)
+- Order has payment records
 
-#### Backend (Python)
+**Operations:**
+- Deletes all `pos.payment` records linked to the order
+- Writes order state to 'draft'
+- Returns order ID
 
-**Model:** `pos.order` (extended)
+**Error Handling:**
+- Raises `ValidationError` with clear message if:
+  - Order not in current session
+  - Session is closed
+  - Order not finalized
+  - No payments exist
 
-**New Method:** `action_edit_payment()`
+### UI Component (`views/pos_order_views.xml`)
+
+**Button Definition:**
+```xml
+<button
+    name="action_edit_payment"
+    type="object"
+    string="🔙 Recuperar Pago"
+    class="oe_highlight"
+    attrs="{'invisible': ['|', ('finalized', '=', False), ('state', '!=', 'done')]}"/>
+```
+
+**Visibility Rules:**
+- Shows only when `finalized = True` AND `state = 'done'`
+- Hidden for draft, pending, or invoiced orders
+
+### Module Manifest (`__manifest__.py`)
 
 ```python
-def action_edit_payment(self):
-    """
-    Edits payment of a finalized order:
-    1. Validate same session and session is open
-    2. Delete all payment lines
-    3. Mark order as draft (payable again)
-    4. Return order ID
-    """
+{
+    'name': 'Control Recuperación Tickets Pagados TPV',
+    'version': '19.0.3.0.0',
+    'category': 'Point of Sale',
+    'depends': ['point_of_sale'],
+    'data': [
+        'views/pos_order_views.xml',
+    ],
+    'installable': True,
+}
 ```
 
-**Process:**
-1. **Validation Phase:**
-   - Check current session (must be same)
-   - Check session state (must be 'in_progress')
-   - Check order finalization
-   - Check payment existence
+## Use Cases
 
-2. **Payment Removal:**
-   - `self.payment_ids.unlink()` - Removes all payments
-   - No record kept (clean removal)
+### Use Case 1: Customer Paid Wrong Amount
+**Scenario:** Customer paid €50 instead of €75
+- Click "🔙 Recuperar Pago"
+- Order returns to draft
+- Correct the payment amount to €75
+- Finalize
 
-3. **Order State Change:**
-   - Set state to 'draft'
-   - Order becomes editable for payment
+### Use Case 2: Wrong Payment Method
+**Scenario:** Order marked as card payment, but customer paid cash
+- Click "🔙 Recuperar Pago"
+- Order returns to draft with no payment
+- Add cash payment
+- Finalize
 
-#### Frontend (JavaScript)
+### Use Case 3: Split Payment Required
+**Scenario:** Customer wants to split €100 order between 2 cards
+- Click "🔙 Recuperar Pago"
+- Order returns to draft
+- Add first card payment: €50
+- Add second card payment: €50
+- Finalize
 
-**Method:** `editPayment(order)`
+### Use Case 4: Additional Items Forgotten
+**Scenario:** Customer remembered they wanted an extra coffee, but order already paid
+- Click "🔙 Recuperar Pago"
+- Order returns to draft
+- Add coffee to items
+- Adjust total payment
+- Finalize
 
-**Flow:**
-1. Show confirmation dialog
-2. If confirmed: Call RPC to backend `action_edit_payment()`
-3. On success:
-   - Load updated orders from POS database
-   - Set order as current
-   - Navigate to PaymentScreen
-   - Show info message
-4. On error:
-   - Show error dialog
-   - Remain on ticket screen
+## Limitations & Important Notes
 
-**User Dialogs:**
-- **Confirmation:** "¿Editar pago del pedido [NAME]?..."
-- **Info:** "El pago del pedido [NAME] ha sido eliminado..."
-- **Error:** "Error al editar pago: [MESSAGE]"
+### ❌ Cannot Edit
 
-#### UI Elements (XML)
+- **Closed Sessions:** Orders from closed cash register sessions cannot be recovered
+- **Invoiced Orders:** Orders that have been invoiced cannot be edited
+- **Different Sessions:** Can only edit orders from the current/active session
 
-**Button Placement:** TicketScreen (after other buttons)
+### ✅ Can Edit
 
-**Button Properties:**
-- Text: "Editar Pago"
-- Icon: Edit symbol (✎)
-- Color: Primary (blue)
-- Visibility: Only when:
-  - Order is finalized (`ticket.finalized`)
-  - Same session (`ticket.session_id.id === pos.session.id`)
+- Items (add/remove products)
+- Payment methods
+- Payment amounts
+- Payment splits
 
-### Validation Rules
+## Error Messages & Solutions
 
-```
-✅ Order must be finalized (state = 'paid')
-✅ Must be in current session
-✅ Session must be in_progress (not closed)
-✅ Order must have at least one payment
-```
+### Error: "Este pedido no pertenece a la sesión de caja actual"
+**Translation:** "This order does not belong to the current cash register session"
+**Solution:** The order was placed in a different session. Switch to that session or wait for the session to reopen.
 
-## Troubleshooting
+### Error: "La sesión de caja está cerrada"
+**Translation:** "The cash register session is closed"
+**Solution:** The session has been closed. You can only edit orders in active sessions.
 
-### "Editar Pago" Button Not Visible
+### Error: "El pedido no está cerrado/finalizado"
+**Translation:** "The order is not closed/finalized"
+**Solution:** Only finalized orders can be recovered. This order may already be in draft status.
 
-**Problem:** Button doesn't appear on closed orders.
+### Error: "El pedido no tiene pagos registrados"
+**Translation:** "The order has no payment records"
+**Solution:** This order doesn't have any payments to remove. Check the order status.
 
-**Solution:**
-1. Verify module is installed
-2. Verify order is finalized
-3. Verify correct session
-4. Clear POS cache (F5, Ctrl+Shift+Delete)
+## Dependencies
 
-### "This order does not belong to current session"
-
-**Problem:** Cannot edit old order's payment.
-
-**Solution:**
-1. This is expected - prevents cross-session tampering
-2. Orders can only be edited in the same session
-3. Once session closes, no editing possible
-
-### "The cash register session is closed"
-
-**Problem:** Cannot edit because session is closed.
-
-**Solution:**
-1. By design - prevents tampering with completed sessions
-2. Edit payments BEFORE closing session
-3. Contact administrator if urgent need
-
-### "The order is not closed/finalized"
-
-**Problem:** Trying to edit draft or in-progress order.
-
-**Solution:**
-1. This is normal - only finalized orders can edit payment
-2. If order is still being prepared, just edit normally
-3. If unsure, check if order is in "Paid" tickets section
-
-## Differences from Previous Version
-
-**v19.0.1.0.0 (Old):**
-- "Recuperar Pedido" button
-- Copies entire order + items
-- Creates new draft order
-- More complex workflow
-
-**v19.0.2.0.0 (New):**
-- "Editar Pago" button
-- Only removes payments
-- Order items untouched
-- Simpler, faster workflow
-- Direct to PaymentScreen
-
-## Support
-
-For issues, feature requests, or technical assistance:
-- **Website:** https://cositt.com
-- **Email:** support@cositt.com
+- **Odoo 19.0+**
+- **Module:** point_of_sale
 
 ## Compatibility
 
-- **Odoo Version:** 19.0 Enterprise
-- **POS Requirements:** Standard Point of Sale setup
-- **Payment Methods:** All standard Odoo payment methods
+- ✅ Odoo 19.0 Enterprise
+- ✅ Odoo 19.0 Community
+- ✅ Multi-session capable
+- ✅ Works with all payment methods
+
+## Support & Troubleshooting
+
+### Button Not Visible
+
+1. **Verify Order Status:**
+   - Check that order state = 'done'
+   - Check that finalized = True
+   - In Odoo menu: Point of Sale > Orders > (open order) > check state field
+
+2. **Verify Module Installation:**
+   - Go to Apps > Search "Recuperación"
+   - Module should show as "Installed"
+
+3. **Clear Cache:**
+   - Browser: Clear cache and hard refresh (Ctrl+Shift+R)
+   - Odoo: Restart server `docker compose restart odoo`
+
+### Action Not Working
+
+1. **Check Session Status:**
+   - Point of Sale > Cash Register Sessions
+   - Find current session, verify state = "En progreso" (In Progress)
+
+2. **Check Order Status:**
+   - Order must be finalized (status = "Pagado")
+   - Order must have payment records
+
+3. **Check Logs:**
+   ```bash
+   docker compose logs odoo 2>&1 | grep "action_edit_payment" | tail -20
+   ```
+
+4. **If Still Failing:**
+   - Restart Odoo: `docker compose restart odoo`
+   - Wait 10 seconds for module reload
+   - Try again
+
+## Change Log
+
+### v19.0.3.0.0 (Current)
+- ✅ Switched from POS UI patching (fragile) to web form button (stable)
+- ✅ Button appears in order form view
+- ✅ Removed broken JavaScript patches
+- ✅ Simplified and proven implementation
+
+### v19.0.2.0.0
+- Initial implementation with JavaScript patching (deprecated)
 
 ## License
 
-This module is licensed under LGPL-3. See LICENSE file for details.
+LGPL-3 - See LICENSE file for details
 
-## Changelog
+## Author
 
-### Version 19.0.2.0.0
-- Complete redesign: Payment editing system
-- Remove payment lines from finalized orders
-- Direct PaymentScreen navigation
-- Simpler, faster workflow
-- Session-based security
-- User-friendly confirmation dialogs
+**Cositt Technology**  
+Specialized in POS and restaurant management solutions for Odoo
 
-### Version 19.0.1.0.0
-- Initial release
-- Basic order access blocking by session
+---
+
+**Last Updated:** May 8, 2026  
+**Tested on:** Odoo 19.0 Enterprise, PostgreSQL 17

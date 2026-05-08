@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Agregar botón "Recuperar Pago" en la vista de formulario de pos.order -->
+        <record id="pos_order_form_recovery" model="ir.ui.view">
+            <field name="name">pos.order.form.recovery</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.pos_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Agregar botón al header después del botón de reembolso -->
+                <xpath expr="//header/button[@name='refund']" position="after">
+                    <button
+                        name="action_edit_payment"
+                        type="object"
+                        string="🔙 Recuperar Pago"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('can_recover_payment', '=', False)]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
