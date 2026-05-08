@@ -1,48 +1,54 @@
-# Paid Order Recovery Control - Edit Payment (Control Recuperación Tickets Pagados TPV)
+# Paid Order Recovery Control - POS Frontend Integration
 
-**Version:** 19.0.3.0.0  
+**Version:** 19.0.6.0.0  
 **Author:** Cositt Technology  
 **License:** LGPL-3  
 **Category:** Point of Sale
 
 ## Overview
 
-This module enables administrators and staff to quickly recover and edit payment information for finalized (paid) orders within the same cash register session. With a single click on a "🔙 Recuperar Pago" button in the Order form, users can remove incorrect payments and reconfigure them with different payment methods, splits, or amounts.
+This module enables restaurant and retail staff to quickly recover and re-edit **paid POS orders** directly from the Point of Sale terminal. With a single click on the **"🔙 Recuperar Pago"** button in the ticket screen, the system automatically:
 
-Perfect for restaurants where payment errors or adjustments are common and need fast resolution.
+1. Creates a **full automatic refund** of the original paid order
+2. **Validates the refund** for accounting compliance
+3. Creates a **new draft order** with the same items (without table assignment)
+4. **Automatically loads** the new order into the POS for immediate modification and re-payment
 
-## Features
+Perfect for restaurants where payment errors, missing items, or adjustment needs require fast resolution without manual order re-entry.
 
-### Payment Recovery & Editing
+## Key Features
 
-- **One-Click Payment Recovery:** "🔙 Recuperar Pago" button visible on closed orders
-- **Automatic Payment Removal:** Deletes all payment lines from the order
-- **Draft Status:** Converts order back to draft status for re-payment
-- **Same Session Requirement:** Orders can only be edited within the same cash register session
-- **Closed Session Protection:** Prevents editing once cash register session is closed
+### One-Click Recovery Flow
+- ✅ **Automatic Refund:** Full refund of original paid order created and validated instantly
+- ✅ **New Draft Order:** Fresh order created with same items, ready for editing
+- ✅ **No Table Assignment:** Recovered orders appear as floating/takeout orders
+- ✅ **Auto-Load to POS:** New order automatically appears on screen for immediate modification
+- ✅ **Same Session Required:** Only works within the current active POS session
 
-### Access & Usage
-
-- **Access Point:** Odoo web interface > Point of Sale > Orders (pos.order form view)
-- **Button Visibility:** Only appears on finalized orders (state = 'done', finalized = True)
-- **User-Friendly:** Clear messaging with error validation
-
-### Flexibility After Recovery
-
-Once an order is recovered (payment removed, back to draft):
-- ✅ Edit order items if needed
+### Order Modification Capabilities
+Once recovered, users can:
+- ✅ Edit item quantities
 - ✅ Add/remove products
-- ✅ Create payment splits (e.g., 25€ cash + 25€ card)
+- ✅ Adjust prices
 - ✅ Change payment method (cash, card, bank transfer, etc.)
-- ✅ Adjust amounts
+- ✅ Create payment splits (e.g., 50% card + 50% cash)
+- ✅ Apply discounts
+
+### Access & User Experience
+
+- **Access Point:** POS Frontend > Orders Screen > Select Paid Order > "🔙 Recuperar Pago" button
+- **Button Visibility:** Only appears on finalized, paid orders from current session
+- **Auto-Navigation:** New order automatically loads in POS ProductScreen
+- **Visual Identification:** Recovered orders labeled "RECUP. [original_order_name]"
 
 ### Safety & Compliance
 
-- ✅ Session-based isolation (only current session)
-- ✅ Automatic validation of order status
-- ✅ Prevention of editing closed sessions
-- ✅ Clear error messages for users
-- ✅ Order state properly managed
+- ✅ Session-based isolation (only current POS session)
+- ✅ Full automatic refund with validation
+- ✅ Prevents editing of closed sessions
+- ✅ Validates all required fields (amount_tax, etc.)
+- ✅ Clear error messages
+- ✅ Accounting-compliant refund workflow
 
 ## Installation
 
@@ -52,217 +58,288 @@ Once an order is recovered (payment removed, back to draft):
    ```
 
 2. Update the module list:
-   - Navigate to **Apps** > **Update Apps List**
+   - Odoo Apps > **Update Apps List**
 
 3. Install the module:
-   - Search and click **Install** on "Control Recuperación Tickets Pagados TPV"
+   - Search for "Control Recuperación Tickets Pagados TPV"
+   - Click **Install**
 
 ## Usage Guide
 
-### Step 1: Access Orders
-1. Go to **Point of Sale** > **Orders** (in Odoo web interface)
-2. Find a finalized order (status = "Pagado" / "Paid")
+### Step 1: Open POS and Find a Paid Order
+1. Launch the Point of Sale application
+2. Navigate to **Orders Screen** (ticket list)
+3. Find an order with status "Paid" (state = 'paid')
 
-### Step 2: Click "Recuperar Pago" Button
-1. Open the order form
-2. Click the **"🔙 Recuperar Pago"** button (appears in the header, only for paid orders)
-3. The system will:
-   - Validate the session is current and open
-   - Remove all payment records
-   - Change order state to draft
-   - Display a success message
+### Step 2: Click "Recuperar Pago"
+1. Select the paid order
+2. Click the **"🔙 Recuperar Pago"** button (appears at the bottom)
+3. The system processes:
+   - Creates full automatic refund ✓
+   - Validates refund ✓
+   - Creates new draft order ✓
+   - Automatically loads new order ✓
 
-### Step 3: Re-Configure Payment
-1. Order is now editable and in draft status
-2. Edit items if needed (add/remove products)
-3. Click **"Guardar"** to save changes
-4. The order is ready for re-payment in POS
+### Step 3: Modify the New Order
+The new order is now loaded in the POS with:
+- All original items pre-populated
+- Draft status (editable)
+- No table assignment
+- Ready for modification
 
-### Step 4: Re-Payment in POS
-1. Open POS application
-2. The recovered order appears as a draft order
-3. Complete the payment with correct method/amount/split
-4. Order is finalized again
+Actions you can take:
+- Change quantities
+- Add/remove items
+- Edit prices
+- Apply discounts
 
-## Technical Details
+### Step 4: Re-Payment
+1. Click **Pay** button
+2. Select payment method(s)
+3. Complete payment as normal
+4. Order finalized
 
-### Backend Model (`models/pos_order.py`)
+## Technical Architecture
+
+### Backend (`models/pos_order.py`)
 
 **Method:** `action_edit_payment()`
 
-**Validations:**
-- Order belongs to current cash register session
-- Session is open (state = 'in_progress')
-- Order is finalized (finalized = True)
-- Order has payment records
-
-**Operations:**
-- Deletes all `pos.payment` records linked to the order
-- Writes order state to 'draft'
-- Returns order ID
-
-**Error Handling:**
-- Raises `ValidationError` with clear message if:
-  - Order not in current session
-  - Session is closed
-  - Order not finalized
-  - No payments exist
-
-### UI Component (`views/pos_order_views.xml`)
-
-**Button Definition:**
-```xml
-<button
-    name="action_edit_payment"
-    type="object"
-    string="🔙 Recuperar Pago"
-    class="oe_highlight"
-    attrs="{'invisible': ['|', ('finalized', '=', False), ('state', '!=', 'done')]}"/>
+**Process:**
+```
+1. Validate current POS session is active
+2. Validate order state is 'paid'
+3. Create refund order using _refund()
+4. Create pos.payment for refund order
+5. Call action_pos_order_paid() to validate refund
+6. Create NEW pos.order (from scratch, not copy) with:
+   - state: 'draft'
+   - preset_id: False (no table)
+   - floating_order_name: 'RECUP. [original_name]'
+   - Copy all pos.order.line items
+7. Call _compute_prices() for totals
+8. Return {new_order_id: X} to frontend
+9. Sync configuration for POS frontend
 ```
 
-**Visibility Rules:**
-- Shows only when `finalized = True` AND `state = 'done'`
-- Hidden for draft, pending, or invoiced orders
+**Key Fields Required:**
+- `amount_tax` (computed, initialized to 0)
+- `amount_total` (computed)
+- `amount_paid` (computed)
+- `amount_return` (computed)
 
-### Module Manifest (`__manifest__.py`)
+### Frontend (`static/src/js/recover_payment.js`)
+
+**Patch:** `TicketScreen.prototype`
+
+**Functionality:**
+```javascript
+canRecoverPayment getter:
+  - Returns true if order is finalized AND state === 'paid'
+
+async recoverPayment() method:
+  - Calls backend action_edit_payment()
+  - Receives new_order_id from backend
+  - Waits 1.5s for POS to sync new order via websocket
+  - Finds new order in POS models
+  - Calls this.pos.setOrder(newOrder)
+  - Calls this.pos.navigateToOrderScreen(newOrder)
+  - Shows success notification
+```
+
+### UI Template (`static/src/xml/recover_payment.xml`)
+
+**OWL Template:** Extends `TicketScreen`
+
+**Button:**
+```xml
+<button
+    t-if="isOrderSynced and canRecoverPayment"
+    class="button btn btn-warning btn-lg py-3 w-100 mb-2"
+    t-on-click="recoverPayment">
+    🔙 Recuperar Pago
+</button>
+```
+
+**Placement:** Before ActionpadWidget (above Refund button)
+
+### Module Configuration (`__manifest__.py`)
 
 ```python
 {
     'name': 'Control Recuperación Tickets Pagados TPV',
-    'version': '19.0.3.0.0',
+    'version': '19.0.6.0.0',
     'category': 'Point of Sale',
     'depends': ['point_of_sale'],
     'data': [
         'views/pos_order_views.xml',
     ],
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'cs_pos_paid_order_recovery_control/static/src/js/recover_payment.js',
+            'cs_pos_paid_order_recovery_control/static/src/xml/recover_payment.xml',
+        ],
+    },
     'installable': True,
 }
 ```
 
 ## Use Cases
 
-### Use Case 1: Customer Paid Wrong Amount
-**Scenario:** Customer paid €50 instead of €75
-- Click "🔙 Recuperar Pago"
-- Order returns to draft
-- Correct the payment amount to €75
-- Finalize
+### Use Case 1: Missing Item
+**Scenario:** Customer paid €75 but forgot they wanted an extra drink
+
+**Flow:**
+1. Open POS Orders
+2. Select the paid order
+3. Click "🔙 Recuperar Pago"
+4. New order auto-loads with all original items
+5. Add the drink
+6. Re-pay for the additional item
 
 ### Use Case 2: Wrong Payment Method
-**Scenario:** Order marked as card payment, but customer paid cash
-- Click "🔙 Recuperar Pago"
-- Order returns to draft with no payment
-- Add cash payment
-- Finalize
+**Scenario:** Order shows card payment but customer actually paid cash
 
-### Use Case 3: Split Payment Required
-**Scenario:** Customer wants to split €100 order between 2 cards
-- Click "🔙 Recuperar Pago"
-- Order returns to draft
-- Add first card payment: €50
-- Add second card payment: €50
-- Finalize
+**Flow:**
+1. Open POS Orders
+2. Select the paid order
+3. Click "🔙 Recuperar Pago"
+4. Automatic refund created
+5. New order auto-loads
+6. Pay with cash instead
 
-### Use Case 4: Additional Items Forgotten
-**Scenario:** Customer remembered they wanted an extra coffee, but order already paid
-- Click "🔙 Recuperar Pago"
-- Order returns to draft
-- Add coffee to items
-- Adjust total payment
-- Finalize
+### Use Case 3: Split Payment
+**Scenario:** Customer wants to split €100 between 2 cards
 
-## Limitations & Important Notes
+**Flow:**
+1. Open POS Orders
+2. Select the paid order
+3. Click "🔙 Recuperar Pago"
+4. New order auto-loads
+5. Pay €50 on card 1
+6. Pay €50 on card 2
 
-### ❌ Cannot Edit
+### Use Case 4: Price Correction
+**Scenario:** Item was incorrectly priced at €10, should be €15
 
-- **Closed Sessions:** Orders from closed cash register sessions cannot be recovered
-- **Invoiced Orders:** Orders that have been invoiced cannot be edited
-- **Different Sessions:** Can only edit orders from the current/active session
+**Flow:**
+1. Open POS Orders
+2. Select the paid order
+3. Click "🔙 Recuperar Pago"
+4. New order auto-loads
+5. Edit item price from €10 to €15
+6. Re-pay the difference
 
-### ✅ Can Edit
+## Important Notes & Limitations
 
-- Items (add/remove products)
-- Payment methods
-- Payment amounts
-- Payment splits
+### ✅ What Works
+- ✅ Recovery within same POS session
+- ✅ Full automatic refund with validation
+- ✅ Item editing (quantities, additions, deletions)
+- ✅ Price modifications
+- ✅ Payment method changes
+- ✅ Split payments
+- ✅ Multi-session safe (isolated by session)
+- ✅ All Odoo payment methods supported
+
+### ❌ What Doesn't Work
+- ❌ Recovery from closed POS sessions
+- ❌ Recovery of invoiced orders
+- ❌ Recovery from different sessions
+- ❌ Unfinalized orders (only 'paid' state)
 
 ## Error Messages & Solutions
 
-### Error: "Este pedido no pertenece a la sesión de caja actual"
-**Translation:** "This order does not belong to the current cash register session"
-**Solution:** The order was placed in a different session. Switch to that session or wait for the session to reopen.
+### "No hay ninguna sesión de caja abierta"
+**Translation:** "No open cash register session"  
+**Solution:** Open a POS session before attempting recovery
 
-### Error: "La sesión de caja está cerrada"
-**Translation:** "The cash register session is closed"
-**Solution:** The session has been closed. You can only edit orders in active sessions.
+### "El pedido no está en estado pagado"
+**Translation:** "Order is not in paid state"  
+**Solution:** Only fully paid orders can be recovered (state='paid')
 
-### Error: "El pedido no está cerrado/finalizado"
-**Translation:** "The order is not closed/finalized"
-**Solution:** Only finalized orders can be recovered. This order may already be in draft status.
+### "El pedido no tiene artículos"
+**Translation:** "Order has no items"  
+**Solution:** Cannot recover an empty order
 
-### Error: "El pedido no tiene pagos registrados"
-**Translation:** "The order has no payment records"
-**Solution:** This order doesn't have any payments to remove. Check the order status.
+### "No hay métodos de pago disponibles en la sesión actual"
+**Translation:** "No payment methods available in session"  
+**Solution:** Configure payment methods in POS settings
 
 ## Dependencies
 
-- **Odoo 19.0+**
+- **Odoo 19.0+** (tested on 19.0 Enterprise)
 - **Module:** point_of_sale
+- **PostgreSQL:** 16+ (any recent version)
 
 ## Compatibility
 
 - ✅ Odoo 19.0 Enterprise
 - ✅ Odoo 19.0 Community
 - ✅ Multi-session capable
-- ✅ Works with all payment methods
+- ✅ All POS payment methods
+- ✅ All browser types (responsive design)
 
-## Support & Troubleshooting
+## Troubleshooting
 
 ### Button Not Visible
 
-1. **Verify Order Status:**
-   - Check that order state = 'done'
-   - Check that finalized = True
-   - In Odoo menu: Point of Sale > Orders > (open order) > check state field
+1. **Verify order is in paid state:**
+   - Open POS Orders
+   - Select order, check state field shows "paid"
 
-2. **Verify Module Installation:**
-   - Go to Apps > Search "Recuperación"
-   - Module should show as "Installed"
+2. **Verify module is installed:**
+   - Odoo Apps > Search "Recuperación"
+   - Should show "Installed"
 
-3. **Clear Cache:**
-   - Browser: Clear cache and hard refresh (Ctrl+Shift+R)
-   - Odoo: Restart server `docker compose restart odoo`
+3. **Clear browser cache:**
+   - Ctrl+Shift+R (hard refresh)
+   - Or clear cookies in browser settings
 
-### Action Not Working
-
-1. **Check Session Status:**
-   - Point of Sale > Cash Register Sessions
-   - Find current session, verify state = "En progreso" (In Progress)
-
-2. **Check Order Status:**
-   - Order must be finalized (status = "Pagado")
-   - Order must have payment records
-
-3. **Check Logs:**
+4. **Restart Odoo:**
    ```bash
-   docker compose logs odoo 2>&1 | grep "action_edit_payment" | tail -20
+   docker-compose restart odoo
    ```
 
-4. **If Still Failing:**
-   - Restart Odoo: `docker compose restart odoo`
-   - Wait 10 seconds for module reload
-   - Try again
+### Recovery Process Hangs
+
+1. **Check POS connectivity:**
+   - Verify internet connection
+   - Verify POS can reach Odoo server
+
+2. **Check server logs:**
+   ```bash
+   docker-compose logs odoo 2>&1 | grep -E "action_edit_payment|ERROR" | tail -20
+   ```
+
+3. **Restart POS:**
+   - Close POS application
+   - Reopen and try again
+
+4. **Restart Odoo:**
+   ```bash
+   docker-compose restart odoo
+   ```
 
 ## Change Log
 
-### v19.0.3.0.0 (Current)
-- ✅ Switched from POS UI patching (fragile) to web form button (stable)
-- ✅ Button appears in order form view
-- ✅ Removed broken JavaScript patches
-- ✅ Simplified and proven implementation
+### v19.0.6.0.0 (Current)
+- ✅ **MAJOR:** Auto-load recovered order into POS without "Cargar Pedido" click
+- ✅ Backend returns `new_order_id` for frontend navigation
+- ✅ Fixed required field `amount_tax` in order creation
+- ✅ Frontend JS uses `navigateToOrderScreen()` for automatic navigation
+- ✅ Added 1.5s sync delay for websocket order synchronization
+- ✅ New orders created with `preset_id: False` (no table assignment)
+- ✅ Orders labeled "RECUP. [name]" for clear identification
 
-### v19.0.2.0.0
-- Initial implementation with JavaScript patching (deprecated)
+### v19.0.5.0.0
+- ✅ Shifted from backend Odoo form button to POS frontend button
+- ✅ Button appears in ticket screen (TicketScreen)
+- ✅ Automatic refund and new draft order creation
+- ✅ No table assignment for recovered orders
+
+### v19.0.3.0.0 - v19.0.4.0.0
+- Initial implementations with various UI iterations
 
 ## License
 
@@ -271,9 +348,10 @@ LGPL-3 - See LICENSE file for details
 ## Author
 
 **Cositt Technology**  
-Specialized in POS and restaurant management solutions for Odoo
+Specialized in Point of Sale and restaurant management solutions for Odoo
 
 ---
 
 **Last Updated:** May 8, 2026  
-**Tested on:** Odoo 19.0 Enterprise, PostgreSQL 17
+**Tested on:** Odoo 19.0 Enterprise, PostgreSQL 16, Python 3.12  
+**Status:** Production Ready ✅
