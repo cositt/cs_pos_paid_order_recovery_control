@@ -6,10 +6,8 @@
     'author': 'Cositt Technology',
     'depends': ['point_of_sale'],
     'data': [
-        'data/data.xml',
         'views/pos_order_views.xml',
     ],
-    'post_init_hook': 'post_init_hook',
     'assets': {},
     'installable': True,
     'auto_install': False,

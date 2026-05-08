@@ -5,7 +5,7 @@
         <record id="pos_order_form_recovery" model="ir.ui.view">
             <field name="name">pos.order.form.recovery</field>
             <field name="model">pos.order</field>
-            <field name="inherit_id" ref="point_of_sale.pos_order_form"/>
+            <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
             <field name="arch" type="xml">
                 <!-- Agregar botón al header después del botón de reembolso -->
                 <xpath expr="//header/button[@name='refund']" position="after">
