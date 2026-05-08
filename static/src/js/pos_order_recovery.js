@@ -5,40 +5,22 @@ import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { onMounted } from "@odoo/owl";
 
 patch(TicketScreen.prototype, {
     setup() {
         super.setup();
         this.floatingButtonContainer = null;
-    },
-
-    /**
-     * Sobrescribe selectOrder para mostrar/ocultar botón flotante
-     */
-    selectOrder(order) {
-        super.selectOrder(order);
         
-        // Si hay un ticket seleccionado, mostrar botón flotante
-        if (order) {
-            this.showFloatingEditButton(order);
-        } else {
-            this.hideFloatingEditButton();
-        }
+        onMounted(() => {
+            this.initFloatingButton();
+        });
     },
 
     /**
-     * Muestra botón flotante "Editar Pago"
+     * Inicializa el observador de cambios en el ticket seleccionado
      */
-    showFloatingEditButton(order) {
-        // Solo mostrar si el ticket está finalizado y es de la sesión actual
-        if (!order.finalized || order.session_id?.id !== this.pos.session.id) {
-            this.hideFloatingEditButton();
-            return;
-        }
-
-        // Si ya existe, ocultarlo primero
-        this.hideFloatingEditButton();
-
+    initFloatingButton() {
         // Crear contenedor del botón flotante
         this.floatingButtonContainer = document.createElement('div');
         this.floatingButtonContainer.className = 'cs-floating-edit-payment-btn';
@@ -56,24 +38,49 @@ patch(TicketScreen.prototype, {
             z-index: 9999;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             border-radius: 5px;
+            display: none;
         `;
-
-        // Agregar evento click
-        const button = this.floatingButtonContainer.querySelector('button');
-        button.addEventListener('click', () => this.editPayment(order));
 
         // Agregar al DOM
         document.body.appendChild(this.floatingButtonContainer);
+
+        // Agregar evento click al botón
+        const button = this.floatingButtonContainer.querySelector('button');
+        button.addEventListener('click', () => {
+            const currentOrder = this.pos.selectedOrder;
+            if (currentOrder) {
+                this.editPayment(currentOrder);
+            }
+        });
+
+        // Observar cambios en props para actualizar visibilidad
+        this.checkFloatingButtonVisibility();
     },
 
     /**
-     * Oculta botón flotante
+     * Verifica y actualiza la visibilidad del botón flotante
      */
-    hideFloatingEditButton() {
-        if (this.floatingButtonContainer) {
-            this.floatingButtonContainer.remove();
-            this.floatingButtonContainer = null;
+    checkFloatingButtonVisibility() {
+        if (!this.floatingButtonContainer) return;
+
+        const currentOrder = this.pos.selectedOrder;
+        
+        // Mostrar botón si hay un ticket seleccionado, finalizado y de la sesión actual
+        if (
+            currentOrder &&
+            currentOrder.finalized &&
+            currentOrder.session_id?.id === this.pos.session.id
+        ) {
+            this.floatingButtonContainer.style.display = 'block';
+        } else {
+            this.floatingButtonContainer.style.display = 'none';
         }
+    },
+
+    render() {
+        super.render();
+        // Verificar visibilidad después de cada render
+        this.checkFloatingButtonVisibility();
     },
 
     /**
@@ -124,9 +131,6 @@ patch(TicketScreen.prototype, {
                 // Navegar a PaymentScreen para editar pago
                 this.pos.showScreen("PaymentScreen");
 
-                // Ocultar botón flotante
-                this.hideFloatingEditButton();
-
                 // Mostrar mensaje
                 this.dialog.add(AlertDialog, {
                     title: _t("Editar pago"),
@@ -145,4 +149,5 @@ patch(TicketScreen.prototype, {
         }
     },
 });
+
 
