@@ -7,6 +7,75 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 patch(TicketScreen.prototype, {
+    setup() {
+        super.setup();
+        this.floatingButtonContainer = null;
+    },
+
+    /**
+     * Sobrescribe selectOrder para mostrar/ocultar botón flotante
+     */
+    selectOrder(order) {
+        super.selectOrder(order);
+        
+        // Si hay un ticket seleccionado, mostrar botón flotante
+        if (order) {
+            this.showFloatingEditButton(order);
+        } else {
+            this.hideFloatingEditButton();
+        }
+    },
+
+    /**
+     * Muestra botón flotante "Editar Pago"
+     */
+    showFloatingEditButton(order) {
+        // Solo mostrar si el ticket está finalizado y es de la sesión actual
+        if (!order.finalized || order.session_id?.id !== this.pos.session.id) {
+            this.hideFloatingEditButton();
+            return;
+        }
+
+        // Si ya existe, ocultarlo primero
+        this.hideFloatingEditButton();
+
+        // Crear contenedor del botón flotante
+        this.floatingButtonContainer = document.createElement('div');
+        this.floatingButtonContainer.className = 'cs-floating-edit-payment-btn';
+        this.floatingButtonContainer.innerHTML = `
+            <button class="btn btn-primary" title="Editar pago del ticket">
+                <i class="fa fa-edit"></i> Editar Pago
+            </button>
+        `;
+
+        // Agregar estilos CSS
+        this.floatingButtonContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-radius: 5px;
+        `;
+
+        // Agregar evento click
+        const button = this.floatingButtonContainer.querySelector('button');
+        button.addEventListener('click', () => this.editPayment(order));
+
+        // Agregar al DOM
+        document.body.appendChild(this.floatingButtonContainer);
+    },
+
+    /**
+     * Oculta botón flotante
+     */
+    hideFloatingEditButton() {
+        if (this.floatingButtonContainer) {
+            this.floatingButtonContainer.remove();
+            this.floatingButtonContainer = null;
+        }
+    },
+
     /**
      * Método: editPayment()
      * Permite editar el pago de un pedido cerrado
@@ -55,6 +124,9 @@ patch(TicketScreen.prototype, {
                 // Navegar a PaymentScreen para editar pago
                 this.pos.showScreen("PaymentScreen");
 
+                // Ocultar botón flotante
+                this.hideFloatingEditButton();
+
                 // Mostrar mensaje
                 this.dialog.add(AlertDialog, {
                     title: _t("Editar pago"),
@@ -73,3 +145,4 @@ patch(TicketScreen.prototype, {
         }
     },
 });
+

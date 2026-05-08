@@ -9,7 +9,6 @@
     'assets': {
         'point_of_sale._assets_pos': [
             'cs_pos_paid_order_recovery_control/static/src/js/pos_order_recovery.js',
-            'cs_pos_paid_order_recovery_control/static/src/xml/ticket_screen_recovery.xml',
         ],
     },
     'installable': True,
